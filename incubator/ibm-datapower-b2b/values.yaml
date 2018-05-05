@@ -1,0 +1,35 @@
+# Default values for datapower.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+replicaCount: 2
+image:
+  # repository and tag default to the official IBM DockerHub repository and tag
+  repository: ibmcom/datapower
+  tag: latest
+  # Change to 'Always' if you want to pull the most recent image
+  pullPolicy: IfNotPresent
+service:
+  name: datapower
+  type: NodePort
+resources:
+  limits:
+    cpu: 2
+    memory: 4Gi
+  requests:
+    cpu: 2
+    memory: 4Gi
+
+webAdminPort: 9090
+gwPort: 2098
+sshPort: 22
+
+persistence:
+  storageClass: standard
+  ## persistence.enabled Enables persistent volume - PV provisioner support necessary
+  enabled: true
+  ## persistence.keep Keep persistent volume after helm delete
+  keep: false
+  ## persistence.accessMode PVC Access Mode
+  accessMode: ReadWriteOnce
+  ## persistence.size PVC Size
+  size: 5Gi

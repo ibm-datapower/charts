@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    chart: {{ .Chart.Name}}-{{ .Chart.Version | replace "+" "_" }}
+    app: {{ template "fullname" . }}
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ template "fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        stdin: true
+        tty: true
+        securityContext:
+          runAsUser: 0
+        resources:
+          limits:
+            cpu: {{ .Values.resources.limits.cpu }}
+            memory: {{ .Values.resources.limits.memory | quote }}
+          requests:
+            cpu: {{ .Values.resources.requests.cpu}}
+            memory: {{ .Values.resources.requests.memory | quote }}
+        env:
+        - name: DATAPOWER_ACCEPT_LICENSE
+          value: "true"
+        - name: DATAPOWER_INTERACTIVE
+          value: "true"
+        - name: DATAPOWER_LOG_COLOR
+          value: "false"
+        ports:
+         - name: service
+           containerPort: 8001
+         - name: sshconsole
+           containerPort: 22
+         - name: adminconsole
+           containerPort: 9090
+         - name: gwport
+           containerPort: 2098
+        volumeMounts:
+         - mountPath: "/drouter/ramdisk2/mnt/raid-volume"
+           name: {{ template "fullname"  . }}-b2b-pvc
+         - mountPath: "/drouter/config"
+           name: {{ template "fullname" . }}-config-pvc
+      volumes:
+        - name: {{ template "fullname" . }}-config-pvc
+          configMap:
+            name: {{ template "fullname" . }}-config
+            items:
+            - key: auto-user.cfg
+              path: "auto-user.cfg"
+            - key: auto-startup.cfg
+              path: "auto-startup.cfg"
+            - key: demo.cfg
+              path: "demo/demo.cfg"
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ template "fullname" . }}-b2b-pvc
+    spec:
+      accessModes:
+        - {{ .Values.persistence.accessMode | quote }}
+      storageClassName: {{ .Values.persistence.storageClass | quote }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size | quote }}

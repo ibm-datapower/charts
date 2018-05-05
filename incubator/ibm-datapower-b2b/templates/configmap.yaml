@@ -1,0 +1,1233 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ template "fullname" . }}-config
+    labels:
+        app: {{ template "fullname" . }}
+        chart: {{ .Chart.Name}}-{{ .Chart.Version | replace "+" "_" }}
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+data:
+    auto-startup.cfg: |
+        top; configure terminal;
+        %if% available "domain-settings"
+        domain-settings
+          admin-state enabled
+          password-treatment masked
+        exit
+        %endif%
+        %if% available "radius"
+        radius
+          admin-state disabled
+          timeout 1000
+          retries 3
+        exit
+        %endif%
+        %if% available "timezone"
+        timezone "EST5EDT"
+        %endif%
+        %if% available "throttle"
+        throttle
+          admin-state disabled
+          memory-throttle 20
+          memory-terminate 5
+          temp-fs-throttle 0
+          temp-fs-terminate 0
+          qcode-warn 10
+          timeout 30
+          no status-log
+          status-loglevel debug
+          sensors-log
+          backlog-size 0
+          backlog-timeout 30
+        exit
+        %endif%
+        %if% available "snmp"
+        snmp
+          admin-state disabled
+          version 2c
+          ip-address 0.0.0.0
+          port 161
+          security-level authPriv
+          access-level read-only
+          trap-default-subscriptions
+          trap-priority warn
+          trap-code 0x00030002
+          trap-code 0x00230003
+          trap-code 0x00330002
+          trap-code 0x00b30014
+          trap-code 0x00e30001
+          trap-code 0x00e40008
+          trap-code 0x00f30008
+          trap-code 0x01530001
+          trap-code 0x01a2000e
+          trap-code 0x01a40001
+          trap-code 0x01a40005
+          trap-code 0x01a40008
+          trap-code 0x01b10006
+          trap-code 0x01b10009
+          trap-code 0x01b20002
+          trap-code 0x01b20004
+          trap-code 0x01b20008
+          trap-code 0x02220001
+          trap-code 0x02220003
+          trap-code 0x02240002
+        exit
+        %endif%
+        sslproxy "system-wsgw-management-loopback" "forward" "system-default" client-cache "on" client-sess-timeout "300" client-cache-size "100"
+        crypto
+
+        %if% available "cert-monitor"
+        cert-monitor
+          admin-state enabled
+          poll 1
+          reminder 30
+          log-level warn
+          no disable-expired-certs
+        exit
+        %endif%
+        exit
+        crypto
+          no crl
+        exit
+        %if% available "raid-volume"
+        raid-volume "raid0"
+          admin-state enabled
+          no read-only
+          directory "raid"
+        exit
+        %endif%
+        %if% available "language"
+        language "de"
+          admin-state disabled
+        exit
+        language "en"
+          admin-state enabled
+        exit
+        language "es"
+          admin-state disabled
+        exit
+        language "fr"
+          admin-state disabled
+        exit
+        language "it"
+          admin-state disabled
+        exit
+        language "ja"
+          admin-state disabled
+        exit
+        language "ko"
+          admin-state disabled
+        exit
+        language "pt_BR"
+          admin-state disabled
+        exit
+        language "ru"
+          admin-state disabled
+        exit
+        language "zh_CN"
+          admin-state disabled
+        exit
+        language "zh_TW"
+          admin-state disabled
+        exit
+        %endif%
+        %if% available "system"
+        system
+          admin-state enabled
+          entitlement "0000001"
+          audit-reserve 40
+          no system-log-fixed-format
+        exit
+        %endif%
+        logging event default-log "all" "error"
+        logging event default-log "mgmt" "notice"
+        logging event default-log "system" "notice"
+        %if% available "rbm"
+        rbm
+          admin-state enabled
+          au-method local
+          no au-ldap-search
+          ldap-prefix "cn="
+          no au-force-dn-ldap-order
+          au-cache-mode absolute
+          au-cache-ttl 600
+          au-ldap-readtimeout 60
+          mc-method local
+          no mc-ldap-search
+          mc-ldap-readtimeout 60
+          fallback-login disabled
+          no apply-cli
+          no restrict-admin
+          pwd-minimum-length 6
+          no pwd-mixed-case
+          no pwd-digit
+          no pwd-nonalphanumeric
+          no pwd-username
+          no pwd-aging
+          pwd-max-age 30
+          no pwd-history
+          pwd-max-history 5
+          cli-timeout 0
+          max-login-failure 0
+          lockout-duration 1
+          no mc-force-dn-ldap-order
+          password-hash-algorithm md5crypt
+          ssl-client-type proxy
+          mc-ssl-client-type proxy
+        exit
+        %endif%
+        acl "rest-mgmt"
+        exit
+        acl "ssh"
+        exit
+        acl "web-b2b-viewer"
+        exit
+        acl "web-mgmt"
+        exit
+        acl "xml-mgmt"
+        exit
+        no ssh
+        user-agent "default"
+          summary "Default User Agent"
+          max-redirects 8
+          timeout 300
+        exit
+        %if% available "urlmap"
+        urlmap "default-attempt-stream-all"
+          match "*"
+        exit
+        %endif%
+        %if% available "compile-options"
+        compile-options "default-attempt-stream"
+          xslt-version XSLT10
+          no strict
+          try-stream default-attempt-stream-all
+          stack-size 524288
+          wsi-validate ignore
+          wsdl-validate-body strict
+          wsdl-validate-headers lax
+          wsdl-validate-faults strict
+          no wsdl-wrapped-faults
+          no wsdl-strict-soap-version
+          no xacml-debug
+        exit
+        %endif%
+        stylepolicy "default"
+          reset
+          summary "Default Processing Policy"
+          filter "store:///filter-reject-all.xsl"
+          xsldefault "store:///identity.xsl"
+          xquerydefault "store:///reject-all-json.xq"
+        exit
+        %if% available "metadata"
+        metadata "ftp-usercert-metadata"
+          meta-item "variable" "dn" "var://context/INPUT/ftp/tls/client-subject-dn"
+          meta-item "variable" "issuer" "var://context/INPUT/ftp/tls/client-issuer-dn"
+          meta-item "variable" "serial" "var://context/INPUT/ftp/tls/client-serial-number"
+        exit
+        metadata "ftp-username-metadata"
+          meta-item "variable" "dn" "var://context/INPUT/ftp/tls/client-subject-dn"
+          meta-item "variable" "issuer" "var://context/INPUT/ftp/tls/client-issuer-dn"
+          meta-item "variable" "password" "var://context/INPUT/ftp/password"
+          meta-item "variable" "serial" "var://context/INPUT/ftp/tls/client-serial-number"
+          meta-item "variable" "username" "var://context/INPUT/ftp/username"
+        exit
+        metadata "oauth-scope-metadata"
+          meta-item "variable" "scope" "var://context/INPUT/oauth/verified-scope"
+        exit
+        metadata "ssh-password-metadata"
+          meta-item "variable" "password" "var://context/INPUT/ssh/password"
+          meta-item "variable" "publickey" "var://context/INPUT/ssh/publickey"
+          meta-item "variable" "username" "var://context/INPUT/ssh/username"
+        exit
+        %endif%
+        xmlmgr "default"
+        xsl cache size "default" "256"
+        xsl checksummed cache default
+        no tx-warn "default"
+        memoization "default"
+        xml parser limits "default"
+         bytes-scanned 4194304
+         element-depth 512
+         attribute-count 128
+         max-node-size 33554432
+         forbid-external-references
+         external-references forbid
+         max-prefixes 1024
+         max-namespaces 1024
+         max-local-names 60000
+        exit
+        documentcache "default"
+         no policy
+         maxdocs "5000"
+         size "0"
+         max-writes "32768"
+        exit
+        no xml validate "default" *
+        xml-manager "default"
+          summary "Default XML-Manager"
+          user-agent "default"
+        exit
+        xmlmgr "default-attempt-stream"
+        xslconfig "default-attempt-stream" "default-attempt-stream"
+        xsl cache size "default-attempt-stream" "256"
+        xsl checksummed cache default-attempt-stream
+        no tx-warn "default-attempt-stream"
+        memoization "default-attempt-stream"
+        xml parser limits "default-attempt-stream"
+         bytes-scanned 268435456
+         element-depth 512
+         attribute-count 128
+         max-node-size 268435456
+         forbid-external-references
+         external-references forbid
+         max-prefixes 1024
+         max-namespaces 1024
+         max-local-names 60000
+        exit
+        documentcache "default-attempt-stream"
+         no policy
+         maxdocs "5000"
+         size "0"
+         max-writes "32768"
+        exit
+        no xml validate "default-attempt-stream" *
+        xml-manager "default-attempt-stream"
+          summary "Default Streaming XML-Manager"
+          user-agent "default"
+        exit
+        xmlmgr "default-wsrr"
+        xsl cache size "default-wsrr" "256"
+        xsl checksummed cache default-wsrr
+        no tx-warn "default-wsrr"
+        memoization "default-wsrr"
+        xml parser limits "default-wsrr"
+         bytes-scanned 4194304
+         element-depth 512
+         attribute-count 128
+         max-node-size 33554432
+         forbid-external-references
+         external-references forbid
+         max-prefixes 1024
+         max-namespaces 1024
+         max-local-names 60000
+        exit
+        documentcache "default-wsrr"
+         no policy
+         maxdocs "5000"
+         size "0"
+         max-writes "32768"
+        exit
+        no xml validate "default-wsrr" *
+        xml-manager "default-wsrr"
+          summary "WSRR XML-Manager"
+          user-agent "default"
+        exit
+        %if% available "aaapolicy"
+        aaapolicy "iop-mgmt-aaa"
+         extract-identity  "http-basic-auth+client-ssl" "" "" "" "" "login" "off" "" "off" "" "xmlfile" "" "" "" "" "" "proxy" "" "" "" ""
+         authenticate xmlfile "store:///iop-mgmt-aaa.xml" "" "" "" "absolute" "3" "" "" "" "" "" "on" "" "" "1.1" "cn=" "" "" "" "" "" "" "" "" "" "" "" "userPassword" "LTPA2" "" "" "" "" "" "off" "" "1.2" "off" "" "off" "32" "off" "32" "off" "off" "" "" "" "" "0" "off" "60" "proxy" "" "" "" "webagent" "" "" "" "default"
+         map-credentials xmlfile "store:///iop-mgmt-aaa.xml" "" ""
+         extract-resource  "request-uri+request-opname" "" ""
+         map-resource xmlfile "store:///iop-mgmt-aaa.xml" "" "WebSEAL" "" ""
+         authorize xmlfile "store:///iop-mgmt-aaa.xml" "" "" "" "" "" "any" "" "" "absolute" "3" "" "" "" "1.1" "" "" "" "member" "" "" "subtree" "(objectClass=*)" "2.0" "deny-biased" "on" "" "" "custom" "" "" "" "off" "" "T" "" "off" "" "r" "" "0" "tfim" "" "off" "on" "off" "off" "60" "proxy" "" "" "webagent" "" "" "" "default"
+         post-process  "off" "" "off" "XS" "" "off" "" "" "" "off" "on" "0" "off" "2.0" "off" "" "" "off" "Digest" "0" "0" "on" "off" "LTPA2" "600" "" "" "" "off" "http://docs.oasis-open.org/wss/oasis-wss-kerberos-token-profile-1.1#GSS_Kerberosv5_AP_REQ" "off" "" "off" "" "off" "" "off" "1000" "off" "all" "CallTFIM" "hmac-sha1" "sha1" "off" "random" "" "0" "off" "off" "off" "off" "" "off" "assertion" "" "wssec-replace" "authentication+attribute" "bearer" "on" "" "" "" "off" "off" "off" "" "0" "AllHTTP" "" "on" "off" "iv-creds" "0" "off" "" "off" "mc-output" "" "" "" "" "as-is-string" "" "" "proxy" "" "" "off" ""
+          log-allowed
+          log-allowed-level info
+          log-rejected
+          log-rejected-level warn
+          no ping-identity-compatibility
+          dos-valve 3
+          ldap-version v2
+          enforce-actor-role
+          dyn-config none
+        exit
+        %endif%
+        %if% available "wsm-stylepolicy"
+        wsm-stylepolicy "default"
+          summary "Default Processing Policy"
+          filter "store:///filter-reject-all.xsl"
+          xsldefault "store:///identity.xsl"
+        exit
+        %endif%
+        xml-mgmt
+          admin-state "disabled"
+          local-address "0.0.0.0" "5550"
+          no ws-management
+          slm-peering 10
+          mode "any+soma+v2004+amp+slm+wsrr-subscription"
+          ssl-config-type server
+        exit
+        no statistics
+        %if% available "apic-gw-service"
+        apic-gw-service
+          admin-state disabled
+          local-address 0.0.0.0
+          local-port 3000
+          api-gw-address 0.0.0.0
+          api-gw-port 9443
+          no database-mode
+        exit
+        %endif%
+        %if% available "audit-log-settings"
+        audit-log-settings
+          admin-state enabled
+          size 1000
+          rotate 3
+          audit-level standard
+        exit
+        %endif%
+        %if% available "smtp-server-connection"
+        smtp-server-connection "default"
+          summary "Default SMTP Server Connection"
+          server-host smtp
+          server-port 25
+          auth plain
+          ssl-client-type proxy
+        exit
+        %endif%
+        %if% available "b2b-persistence"
+        b2b-persistence
+          admin-state enabled
+          raid-volume raid0
+          storage-size 1024
+          no ha-enabled
+          ha-other-hosts "" "1320"
+          ha-local-ip 0.0.0.0
+          ha-local-port 1320
+        exit
+        %endif%
+        crypto
+        %if% available "sshdomainclientprofile"
+        sshdomainclientprofile
+          no ciphers
+          admin-state enabled
+          ciphers CHACHA20-POLY1305_AT_OPENSSH.COM
+          ciphers AES128-CTR
+          ciphers AES192-CTR
+          ciphers AES256-CTR
+          ciphers AES128-GCM_AT_OPENSSH.COM
+          ciphers AES256-GCM_AT_OPENSSH.COM
+          ciphers ARCFOUR256
+          ciphers ARCFOUR128
+          ciphers AES128-CBC
+          ciphers 3DES-CBC
+          ciphers BLOWFISH-CBC
+          ciphers CAST128-CBC
+          ciphers AES192-CBC
+          ciphers AES256-CBC
+          ciphers ARCFOUR
+          ciphers RIJNDAEL-CBC_AT_LYSATOR.LIU.SE
+          enable-legacy-kex no
+        exit
+        %endif%
+        exit
+        crypto
+
+        %if% available "sshserverprofile"
+        sshserverprofile
+          no ciphers
+          admin-state enabled
+          ciphers CHACHA20-POLY1305_AT_OPENSSH.COM
+          ciphers AES128-CTR
+          ciphers AES192-CTR
+          ciphers AES256-CTR
+          ciphers AES128-GCM_AT_OPENSSH.COM
+          ciphers AES256-GCM_AT_OPENSSH.COM
+          ciphers ARCFOUR256
+          ciphers ARCFOUR128
+          ciphers AES128-CBC
+          ciphers 3DES-CBC
+          ciphers BLOWFISH-CBC
+          ciphers CAST128-CBC
+          ciphers AES192-CBC
+          ciphers AES256-CBC
+          ciphers ARCFOUR
+          ciphers RIJNDAEL-CBC_AT_LYSATOR.LIU.SE
+          enable-legacy-kex no
+          send-preauth-msg no
+        exit
+        %endif%
+        exit
+        %if% available "domain-availability"
+        domain-availability
+          admin-state disabled
+        exit
+        %endif%
+        %if% available "gatewayscript-settings"
+        gatewayscript-settings
+          admin-state enabled
+          freeze-prototype
+          untrusted-code-mitigations
+          max-processing-duration 0
+        exit
+        %endif%
+        %if% available "iop-mgmt"
+        iop-mgmt
+          admin-state disabled
+          http-service
+          http-ip-address 0.0.0.0
+          http-port 9990
+          no https-service
+          https-ip-address 0.0.0.0
+          https-port 9991
+          ssl-config-type server
+        exit
+        %endif%
+        %if% available "nfs-client"
+        nfs-client
+          admin-state disabled
+          mount-refresh-time 10
+        exit
+        %endif%
+        %if% available "nfs-dynamic-mounts"
+        nfs-dynamic-mounts
+          admin-state disabled
+          version 3
+          transport tcp
+          mount-type hard
+          no read-only
+          rsize 4096
+          wsize 4096
+          timeo 7
+          retrans 3
+          inactivity-timeout 900
+          mount-timeout 30
+        exit
+        %endif%
+        %if% available "odr"
+        odr
+          admin-state disabled
+          odr-server-name "dp_set"
+        exit
+        %endif%
+        %if% available "product-insights"
+        product-insights
+          admin-state disabled
+          host "example.ibm.com"
+          credentials "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        exit
+        %endif%
+        %if% available "quota-enforcement-server"
+        quota-enforcement-server
+          admin-state enabled
+          server-port 16379
+          monitor-port 26379
+          no enable-peer-group
+          enable-ssl
+          priority 100
+          strict-mode
+        exit
+        %endif%
+        %if% available "secure-mode"
+        secure-mode
+          admin-state enabled
+        exit
+        %endif%
+        rest-mgmt
+          admin-state "disabled"
+          local-address "0.0.0.0" "5554"
+          ssl-config-type server
+        exit
+        %if% available "b2b-viewer-mgmt"
+        b2b-viewer-mgmt
+          admin-state "disabled"
+          local-address "0.0.0.0" "9091"
+          idle-timeout 600
+          ssl-config-type proxy
+        exit
+        %endif%
+        %if% available "save-config overwrite"
+        save-config overwrite
+        %endif%
+        web-mgmt
+          admin-state "enabled"
+          local-address "0.0.0.0" "9090"
+          save-config-overwrite
+          idle-timeout 0
+          ssl-config-type server
+        exit
+        %if% available "slm-action"
+        slm-action "notify"
+          type log-only
+          log-priority warn
+        exit
+        slm-action "shape"
+          type shape
+          log-priority debug
+        exit
+        slm-action "throttle"
+          type reject
+          log-priority debug
+        exit
+        %endif%
+        exec config:///auto-user.cfg
+        %if% available "wsm-agent"
+        wsm-agent
+          admin-state disabled
+          max-records 3000
+          max-memory 64000
+          capture-mode faults
+          buffer-mode discard
+          no mediation-enforcement-metrics
+          max-payload-size 0
+          push-interval 100
+          push-priority normal
+        exit
+        domain "demo"
+          base-dir local:
+          base-dir demo:
+          config-file demo.cfg
+          visible-domain default
+          url-permissions "http+https"
+          file-permissions "CopyFrom+CopyTo+Delete+Display+Exec+Subdir"
+          file-monitoring ""
+          config-mode local
+          import-format ZIP
+          local-ip-rewrite
+          maxchkpoints 3
+        exit
+        %endif%
+        failure-notification
+          admin-state "enabled"
+          no upload-report
+          no use-smtp
+          internal-state
+          no ffdc packet-capture
+          no ffdc event-log
+          no ffdc memory-trace
+          no always-on-startup
+          always-on-shutdown
+          protocol ftp
+          report-history 5
+        exit
+        %if% isfile temporary:///backtrace
+        save error-report
+        %endif%§
+    auto-user.cfg: |
+        top; configure terminal;
+        # configuration generated Tue Apr 17 15:18:28 2018; firmware version 298100
+        %if% available "user"
+        user "admin"
+          summary "Administrator"
+          password-hashed "$1$12345678$kbapHduhihjieYIUP66Xt/"
+          access-level privileged
+        exit
+        %endif%§
+
+    demo.cfg: |
+      top; configure terminal;
+      %if% available "domain-settings"
+      domain-settings
+        admin-state enabled
+        password-treatment none
+      exit
+      %endif%
+      %if% available "password-alias"
+      password-alias "admin"
+      exit
+      %endif%
+      logging event default-log "all" "error"
+      logging event default-log "mgmt" "notice"
+      user-agent "default"
+        summary "Default User Agent"
+        max-redirects 8
+        timeout 300
+      exit
+      %if% available "urlmap"
+      urlmap "default-attempt-stream-all"
+        match "*"
+      exit
+      %endif%
+      %if% available "compile-options"
+      compile-options "default-attempt-stream"
+        xslt-version XSLT10
+        no strict
+        try-stream default-attempt-stream-all
+        stack-size 524288
+        wsi-validate ignore
+        wsdl-validate-body strict
+        wsdl-validate-headers lax
+        wsdl-validate-faults strict
+        no wsdl-wrapped-faults
+        no wsdl-strict-soap-version
+        no xacml-debug
+      exit
+      %endif%
+      action "Eater_rule_0_results_output_0"
+        reset
+        type results
+        input "INPUT"
+        parse-settings-result-type none
+        transform-language none
+        named-inouts default
+        ssl-client-type proxy
+        output-type default
+        no transactional
+        soap-validation body
+        sql-source-type static
+        strip-signature
+        no asynchronous
+        results-mode first-available
+        retry-count 0
+        retry-interval 1000
+        no multiple-outputs
+        iterator-type XPATH
+        timeout 0
+        http-method GET
+        http-method-limited POST
+        http-method-limited2 POST
+      exit
+      rule "Eater_rule_0"
+        reset
+        type request-rule
+        input-filter none
+        output-filter none
+        no non-xml-processing
+        no unprocessed
+          action "Eater_rule_0_results_output_0"
+      exit
+      matching "matchAll"
+        urlmatch "*"
+        no match-with-pcre
+        no combine-with-or
+      exit
+      stylepolicy "default"
+        reset
+        summary "Default Processing Policy"
+        filter "store:///filter-reject-all.xsl"
+        xsldefault "store:///identity.xsl"
+        xquerydefault "store:///reject-all-json.xq"
+      exit
+      stylepolicy "Eater"
+        reset
+        filter "store:///filter-reject-all.xsl"
+        xsldefault "store:///identity.xsl"
+        xquerydefault "store:///reject-all-json.xq"
+        match "matchAll" "Eater_rule_0"
+      exit
+      %if% available "metadata"
+      metadata "ftp-usercert-metadata"
+        meta-item "variable" "dn" "var://context/INPUT/ftp/tls/client-subject-dn"
+        meta-item "variable" "issuer" "var://context/INPUT/ftp/tls/client-issuer-dn"
+        meta-item "variable" "serial" "var://context/INPUT/ftp/tls/client-serial-number"
+      exit
+      metadata "ftp-username-metadata"
+        meta-item "variable" "dn" "var://context/INPUT/ftp/tls/client-subject-dn"
+        meta-item "variable" "issuer" "var://context/INPUT/ftp/tls/client-issuer-dn"
+        meta-item "variable" "password" "var://context/INPUT/ftp/password"
+        meta-item "variable" "serial" "var://context/INPUT/ftp/tls/client-serial-number"
+        meta-item "variable" "username" "var://context/INPUT/ftp/username"
+      exit
+      metadata "oauth-scope-metadata"
+        meta-item "variable" "scope" "var://context/INPUT/oauth/verified-scope"
+      exit
+      metadata "ssh-password-metadata"
+        meta-item "variable" "password" "var://context/INPUT/ssh/password"
+        meta-item "variable" "publickey" "var://context/INPUT/ssh/publickey"
+        meta-item "variable" "username" "var://context/INPUT/ssh/username"
+      exit
+      %endif%
+      xmlmgr "default"
+      xsl cache size "default" "256"
+      xsl checksummed cache default
+      no tx-warn "default"
+      memoization "default"
+      xml parser limits "default"
+       bytes-scanned 4194304
+       element-depth 512
+       attribute-count 128
+       max-node-size 33554432
+       forbid-external-references
+       external-references forbid
+       max-prefixes 1024
+       max-namespaces 1024
+       max-local-names 60000
+      exit
+      documentcache "default"
+       no policy
+       maxdocs "5000"
+       size "0"
+       max-writes "32768"
+      exit
+      no xml validate "default" *
+      xml-manager "default"
+        summary "Default XML-Manager"
+        user-agent "default"
+      exit
+      xmlmgr "default-attempt-stream"
+      xslconfig "default-attempt-stream" "default-attempt-stream"
+      xsl cache size "default-attempt-stream" "256"
+      xsl checksummed cache default-attempt-stream
+      no tx-warn "default-attempt-stream"
+      memoization "default-attempt-stream"
+      xml parser limits "default-attempt-stream"
+       bytes-scanned 268435456
+       element-depth 512
+       attribute-count 128
+       max-node-size 268435456
+       forbid-external-references
+       external-references forbid
+       max-prefixes 1024
+       max-namespaces 1024
+       max-local-names 60000
+      exit
+      documentcache "default-attempt-stream"
+       no policy
+       maxdocs "5000"
+       size "0"
+       max-writes "32768"
+      exit
+      no xml validate "default-attempt-stream" *
+      xml-manager "default-attempt-stream"
+        summary "Default Streaming XML-Manager"
+        user-agent "default"
+      exit
+      xmlmgr "default-wsrr"
+      xsl cache size "default-wsrr" "256"
+      xsl checksummed cache default-wsrr
+      no tx-warn "default-wsrr"
+      memoization "default-wsrr"
+      xml parser limits "default-wsrr"
+       bytes-scanned 4194304
+       element-depth 512
+       attribute-count 128
+       max-node-size 33554432
+       forbid-external-references
+       external-references forbid
+       max-prefixes 1024
+       max-namespaces 1024
+       max-local-names 60000
+      exit
+      documentcache "default-wsrr"
+       no policy
+       maxdocs "5000"
+       size "0"
+       max-writes "32768"
+      exit
+      no xml validate "default-wsrr" *
+      xml-manager "default-wsrr"
+        summary "WSRR XML-Manager"
+        user-agent "default"
+      exit
+      %if% available "source-http"
+      source-http "FSH-HTTP-2098"
+        local-address 0.0.0.0
+        port 2098
+        http-client-version HTTP/1.1
+        allowed-features "HTTP-1.0+HTTP-1.1+POST+PUT+QueryString+FragmentIdentifiers"
+        persistent-connections
+        max-persistent-reuse 0
+        no compression
+        no websocket-upgrade
+        websocket-idle-timeout 0
+        max-url-len 16384
+        max-total-header-len 128000
+        max-header-count 0
+        max-header-name-len 0
+        max-header-value-len 0
+        max-querystring-len 0
+        credential-charset protocol
+        http2-max-streams 100
+        http2-max-frame 16384
+        no http2-stream-header
+      exit
+      %endif%
+      %if% available "wsm-stylepolicy"
+      wsm-stylepolicy "default"
+        summary "Default Processing Policy"
+        filter "store:///filter-reject-all.xsl"
+        xsldefault "store:///identity.xsl"
+      exit
+      %endif%
+      %if% available "smtp-server-connection"
+      smtp-server-connection "default"
+        summary "Default SMTP Server Connection"
+        server-host smtp
+        server-port 25
+        auth plain
+        ssl-client-type proxy
+      exit
+      %endif%
+      %if% available "b2b-profile"
+      b2b-profile "My-Best-ExternalPartner"
+        profile-type external
+        business-id "MYBESTPARTNER"
+        business-id "ZZMYBESTPARTNER"
+        response-type preprocessed
+        destination
+          name "MyBestExternalPartner-Dest"
+          dest-url "http://bestpartner.com"
+          enabled-doc-type "EnableXML+EnableX12+EnableEDIFACT+EnableBinary"
+          smtp-server-connection default
+          no use-unique-filenames
+          timeout 300
+          no enable-ftp-settings
+          ftp-passive pasv-req
+          ftp-auth-tls auth-off
+          ftp-use-ccc ccc-off
+          ftp-encrypt-data enc-data-off
+          ftp-data-type binary
+          ftp-slash-stou slash-stou-on
+          ftp-size-check size-check-optional
+          binary-transfer-mode auto-detect
+          no as-compress
+          no as-compress-before-sign
+          no as-send-unsigned
+          no as-encrypt
+          no as-mdn-request
+          no as-mdn-request-async
+          no as-mdn-request-signed
+          no retransmit
+          ack-time 1800
+          max-resends 3
+          as-encrypt-alg 3des
+          as-mdn-request-signed-algs "sha1,md5"
+          no ebms-send-unsigned
+          no ebms-encrypt
+          ebms-encrypt-alg http://www.w3.org/2001/04/xmlenc#tripledes-cbc
+          ebms-duplicate-elimination-request
+          no ebms-ack-request
+          no ebms-ack-request-signed
+          ebms-syncreply-mode none
+          no ebms-retry
+          ebms-max-retries 3
+          ebms-retry-interval 1800
+          ebms-include-time-to-live
+          ssl-client-type proxy
+          ebms-mep one-way-push
+          no ebms-outbound-request-receipt
+          no ebms-outbound-request-signed-receipt
+          ebms-outbound-receipt-reply-pattern Response
+          no ebms-reception-awareness-notification
+          ebms-reception-awareness-timeout 300
+          no ebms-compress
+        exit
+        no require-signed
+        no require-encrypted
+        no sign
+        sign-digest-alg sha1
+        sign-micalg-version SMIME3.1
+        as-allow-dup-msg never
+        no preserve-filename
+        ebms-persist-duration 0
+        no ebms-inbound-send-receipt
+        no ebms-inbound-send-signed-receipt
+        ebms-inbound-receipt-reply-pattern Response
+        no ebms-require-signed
+        no ebms-require-encrypted
+        no ebms-sign
+        ebms-signature-alg dsa-sha1
+        ebms-signature-c14n-alg c14n
+        ebms-sign-digest-alg sha1
+        no ebms-enable-cpa-bindings
+        no ebms-start-parameter
+        ebms-allow-dup-msg never
+        mdn-ssl-client-type proxy
+        ebmsack-ssl-client-type proxy
+        no ebms3-sign
+        ebms3-sign-digest-alg sha1
+        ebms3-signature-alg rsa-sha1
+        ebms3-signature-c14n-alg exc-c14n
+        no ebms3-require-signed
+        no ebms3-require-encrypted
+        no ebms3-require-compressed
+        ebms3-receipt-ssl-client-type proxy
+        no ebms-notification
+        ebms-notification-ssl-client-type proxy
+        ebms3-allow-dup-msg never
+        no ebms3-duplicate-detection-notification
+      exit
+      b2b-profile "MyCompany"
+        profile-type internal
+        business-id "BESTCORPUS"
+        business-id "ZZBESTCORPUS"
+        response-type preprocessed
+        destination
+          name "MyCompany-Dest"
+          dest-url "http://127.0.0.1:2099"
+          enabled-doc-type "EnableXML+EnableX12+EnableEDIFACT+EnableBinary"
+          smtp-server-connection default
+          no use-unique-filenames
+          timeout 300
+          no enable-ftp-settings
+          ftp-passive pasv-req
+          ftp-auth-tls auth-off
+          ftp-use-ccc ccc-off
+          ftp-encrypt-data enc-data-off
+          ftp-data-type binary
+          ftp-slash-stou slash-stou-on
+          ftp-size-check size-check-optional
+          binary-transfer-mode auto-detect
+          no as-compress
+          no as-compress-before-sign
+          no as-send-unsigned
+          no as-encrypt
+          no as-mdn-request
+          no as-mdn-request-async
+          no as-mdn-request-signed
+          no retransmit
+          ack-time 1800
+          max-resends 3
+          as-encrypt-alg 3des
+          as-mdn-request-signed-algs "sha1,md5"
+          no ebms-send-unsigned
+          no ebms-encrypt
+          ebms-encrypt-alg http://www.w3.org/2001/04/xmlenc#tripledes-cbc
+          ebms-duplicate-elimination-request
+          no ebms-ack-request
+          no ebms-ack-request-signed
+          ebms-syncreply-mode none
+          no ebms-retry
+          ebms-max-retries 3
+          ebms-retry-interval 1800
+          ebms-include-time-to-live
+          ssl-client-type proxy
+          ebms-mep one-way-push
+          no ebms-outbound-request-receipt
+          no ebms-outbound-request-signed-receipt
+          ebms-outbound-receipt-reply-pattern Response
+          no ebms-reception-awareness-notification
+          ebms-reception-awareness-timeout 300
+          no ebms-compress
+        exit
+        no require-signed
+        no require-encrypted
+        no sign
+        sign-digest-alg sha1
+        sign-micalg-version SMIME3.1
+        as-allow-dup-msg never
+        no preserve-filename
+        ebms-persist-duration 0
+        no ebms-inbound-send-receipt
+        no ebms-inbound-send-signed-receipt
+        ebms-inbound-receipt-reply-pattern Response
+        no ebms-require-signed
+        no ebms-require-encrypted
+        no ebms-sign
+        ebms-signature-alg dsa-sha1
+        ebms-signature-c14n-alg c14n
+        ebms-sign-digest-alg sha1
+        no ebms-enable-cpa-bindings
+        no ebms-start-parameter
+        ebms-allow-dup-msg never
+        mdn-ssl-client-type proxy
+        ebmsack-ssl-client-type proxy
+        no ebms3-sign
+        ebms3-sign-digest-alg sha1
+        ebms3-signature-alg rsa-sha1
+        ebms3-signature-c14n-alg exc-c14n
+        no ebms3-require-signed
+        no ebms3-require-encrypted
+        no ebms3-require-compressed
+        ebms3-receipt-ssl-client-type proxy
+        no ebms-notification
+        ebms-notification-ssl-client-type proxy
+        ebms3-allow-dup-msg never
+        no ebms3-duplicate-detection-notification
+      exit
+      %endif%
+      %if% available "b2bgw"
+      b2bgw "Demo-B2B-GW-Service"
+        priority normal
+        doc-location (default)
+        as-fsph
+          front-protocol FSH-HTTP-2098
+          mdn-receiver
+        exit
+        b2b-profile
+          profile My-Best-ExternalPartner
+          enabled
+        exit
+        b2b-profile
+          profile MyCompany
+          enabled
+        exit
+        document-routing-preprocessor-type stylesheet
+        document-routing-preprocessor "store:///b2b-routing.xsl"
+        arch-mode purgeonly
+        arch-minimum-size 1024
+        arch-document-age 90
+        arch-minimum-documents 100
+        diskuse-check-interval 60
+        max-diskuse 25165824
+        arch-monitor
+        arch-shaping-threshold 200
+        arch-backup-documents "InMessage+OutMessage+InMDN+OutMDN+EBMSInMessage+EBMSOutMessage+EBMSInACK+EBMSOutACK+EBMS3InMessage+EBMS3OutMessage+EBMS3InRCPT+EBMS3OutRCPT"
+        xml-manager default
+        debugger-type internal
+        debug-history 25
+        front-side-timeout 120
+      exit
+      %endif%
+      crypto
+      %if% available "sshdomainclientprofile"
+      sshdomainclientprofile
+        no ciphers
+        admin-state enabled
+        ciphers CHACHA20-POLY1305_AT_OPENSSH.COM
+        ciphers AES128-CTR
+        ciphers AES192-CTR
+        ciphers AES256-CTR
+        ciphers AES128-GCM_AT_OPENSSH.COM
+        ciphers AES256-GCM_AT_OPENSSH.COM
+        ciphers ARCFOUR256
+        ciphers ARCFOUR128
+        ciphers AES128-CBC
+        ciphers 3DES-CBC
+        ciphers BLOWFISH-CBC
+        ciphers CAST128-CBC
+        ciphers AES192-CBC
+        ciphers AES256-CBC
+        ciphers ARCFOUR
+        ciphers RIJNDAEL-CBC_AT_LYSATOR.LIU.SE
+        enable-legacy-kex no
+      exit
+      %endif%
+      exit
+      crypto
+      %if% available "sshserverprofile"
+      sshserverprofile
+        no ciphers
+        admin-state enabled
+        ciphers CHACHA20-POLY1305_AT_OPENSSH.COM
+        ciphers AES128-CTR
+        ciphers AES192-CTR
+        ciphers AES256-CTR
+        ciphers AES128-GCM_AT_OPENSSH.COM
+        ciphers AES256-GCM_AT_OPENSSH.COM
+        ciphers ARCFOUR256
+        ciphers ARCFOUR128
+        ciphers AES128-CBC
+        ciphers 3DES-CBC
+        ciphers BLOWFISH-CBC
+        ciphers CAST128-CBC
+        ciphers AES192-CBC
+        ciphers AES256-CBC
+        ciphers ARCFOUR
+        ciphers RIJNDAEL-CBC_AT_LYSATOR.LIU.SE
+        enable-legacy-kex no
+        send-preauth-msg no
+      exit
+      %endif%
+      exit
+      %if% available "domain-availability"
+      domain-availability
+        admin-state disabled
+      exit
+      %endif%
+      %if% available "isam-runtime"
+      isam-runtime
+        admin-state disabled
+        policy-server-type remote
+        user-registry-type-remote ldap
+        policy-server-port 7135
+        management-domain "Default"
+        ldap-port 389
+      exit
+      %endif%
+      %if% available "nfs-dynamic-mounts"
+      nfs-dynamic-mounts
+        admin-state disabled
+        version 3
+        transport tcp
+        mount-type hard
+        no read-only
+        rsize 4096
+        wsize 4096
+        timeo 7
+        retrans 3
+        inactivity-timeout 900
+        mount-timeout 30
+      exit
+      %endif%
+      %if% available "xmlfirewall"
+      xmlfirewall "example-Firewall"
+        local-address "0.0.0.0" "2099"
+        summary "an example XML Firewall Service"
+        priority normal
+        default-param-namespace "http://www.datapower.com/param/config"
+        query-param-namespace "http://www.datapower.com/param/query"
+        no force-policy-exec
+        monitor-processing-policy terminate-at-first-throttle
+        debugger-type internal
+        debug-history 25
+        remote-address %loopback%
+        xml-manager default
+        stylesheet-policy Eater
+        max-message-size 0
+        request-type preprocessed
+        response-type unprocessed
+        request-attachments strip
+        response-attachments strip
+        root-part-not-first-action process-in-order
+        front-attachment-format dynamic
+        back-attachment-format dynamic
+        mime-headers
+        rewrite-errors
+        delay-errors
+        delay-errors-duration 1000
+        soap-schema-url "store:///schemas/soap-envelope.xsd"
+        wsdl-response-policy off
+        no firewall-parser-limits
+        bytes-scanned 4194304
+        element-depth 512
+        attribute-count 128
+        max-node-size 33554432
+        forbid-external-references
+        max-prefixes 1024
+        max-namespaces 1024
+        max-local-names 60000
+        attachment-byte-count 2000000000
+        attachment-package-byte-count 0
+        external-references forbid
+        credential-charset protocol
+        ssl-config-type proxy
+      exit
+      http "example-Firewall" xmlfirewall
+        http-timeout 120
+        persistent-timeout 180
+        host-rewriting "on"
+        no silence-warning
+        no compression
+        no include-response-type-encoding
+        no always-show-errors
+        no disallow-get
+        no disallow-empty-reply
+        persistent-connections
+        client-address "X-Client-IP"
+        http-global-tranID-label "X-Global-Transaction-ID"
+        httpproxy-port 800
+        version "HTTP/1.1" "HTTP/1.1"
+        no chunked-uploads
+      exit
+      %endif%
+      %if% available "slm-action"
+      slm-action "notify"
+        type log-only
+        log-priority warn
+      exit
+      slm-action "shape"
+        type shape
+        log-priority debug
+      exit
+      slm-action "throttle"
+        type reject
+        log-priority debug
+      exit
+      %endif%
+      no statistics
+      %if% available "wsm-agent"
+      wsm-agent
+        admin-state disabled
+        max-records 3000
+        max-memory 64000
+        capture-mode faults
+        buffer-mode discard
+        no mediation-enforcement-metrics
+        max-payload-size 0
+        push-interval 100
+        push-priority normal
+      exit
+      %endif%
